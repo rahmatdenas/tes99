@@ -186,43 +186,61 @@ function populateImageAndWikipediaData() {
 // ====================================================================
 function populateImportantEventsData(qid) {
   let record = Records[qid];
-  let queryStr = getSparqlQuery4(qid); // Memanggil fungsi kueri dari JS 2
+  let queryStr = getSparqlQuery4(qid);
 
-  // Kosongkan array untuk mencegah duplikasi jika pengguna mengklik pin yang sama dua kali
   record.events = []; 
+
+  // TAMBAHAN: Daftar whitelist peristiwa yang diizinkan tampil
+  const ALLOWED_EVENTS = [
+    'konstruksi', 
+    'dibuka untuk umum', 
+    'upacara pembukaan', 
+    'renovasi', 
+    'pembangunan kembali'
+  ];
 
   return queryWdqsThenProcess(
     queryStr,
     function(result) {
-      // --- LOGIKA PENGOLAHAN WAKTU (TIDAK BERUBAH) ---
       if ('eventLabel' in result && result.eventLabel.value) {
-        let eventObj = { label: result.eventLabel.value, time: '' };
+        let labelKecil = result.eventLabel.value.toLowerCase();
         
-        let pt = result.pointInTime ? formatWikidataDate(result.pointInTime.value, result.ptPrecision ? result.ptPrecision.value : 9) : null;
-        let st = result.startTime ? formatWikidataDate(result.startTime.value, result.stPrecision ? result.stPrecision.value : 9) : null;
-        let et = result.endTime ? formatWikidataDate(result.endTime.value, result.etPrecision ? result.etPrecision.value : 9) : null;
+        // TAMBAHAN: Filter, hanya proses jika label masuk dalam ALLOWED_EVENTS
+        if (ALLOWED_EVENTS.includes(labelKecil)) {
+          
+          // TAMBAHAN: Ambil data tahun mentah (untuk cadangan pengurutan jika ada 2 peristiwa sejenis)
+          let rawDateStr = (result.pointInTime ? result.pointInTime.value : null) || 
+                           (result.startTime ? result.startTime.value : null) || 
+                           (result.endTime ? result.endTime.value : null);
+          let extractYear = rawDateStr ? parseInt(rawDateStr.match(/([+-]?\d{4,})/)[0]) : 9999;
 
-        if (pt) {
-          eventObj.time = pt;
-        } else if (st && et) {
-          eventObj.time = `${st} – ${et}`;
-        } else if (st) {
-          eventObj.time = `Mulai ${st}`;
-        } else if (et) {
-          eventObj.time = `Selesai ${et}`;
+          // TAMBAHAN: Masukkan sortYear ke dalam objek
+          let eventObj = { label: result.eventLabel.value, time: '', sortYear: extractYear };
+          
+          let pt = result.pointInTime ? formatWikidataDate(result.pointInTime.value, result.ptPrecision ? result.ptPrecision.value : 9) : null;
+          let st = result.startTime ? formatWikidataDate(result.startTime.value, result.stPrecision ? result.stPrecision.value : 9) : null;
+          let et = result.endTime ? formatWikidataDate(result.endTime.value, result.etPrecision ? result.etPrecision.value : 9) : null;
+
+          if (pt) {
+            eventObj.time = pt;
+          } else if (st && et) {
+            eventObj.time = `${st} – ${et}`;
+          } else if (st) {
+            eventObj.time = `Mulai ${st}`;
+          } else if (et) {
+            eventObj.time = `Selesai ${et}`;
+          }
+
+          let isDuplicate = record.events.some(e => e.label === eventObj.label && e.time === eventObj.time);
+          if (!isDuplicate) record.events.push(eventObj);
         }
-
-        let isDuplicate = record.events.some(e => e.label === eventObj.label && e.time === eventObj.time);
-        if (!isDuplicate) record.events.push(eventObj);
       }
     },
     function() {
-      // --- CALLBACK: Dijalankan setelah data selesai ditarik ---
       renderEventsInPanel(qid); 
     }
   );
 }
-
 // ====================================================================
 // FUNGSI RENDER: Menyuntikkan Data Peristiwa (DIPERBAIKI)
 // ====================================================================
@@ -234,16 +252,27 @@ function renderEventsInPanel(qid) {
   if (!container) return; 
 
   if (record.events && record.events.length > 0) {
+    
+    // TAMBAHAN: Urutan baku yang kamu minta
     const EVENT_ORDER = {
-      'pembebasan tanah': 1, 'peletakan batu pertama': 2,
-      'konstruksi': 3, 'dibuka untuk umum': 4,
-      'upacara pembukaan': 5, 'perombakan': 6, 'renovasi': 6
+      'konstruksi': 1,
+      'dibuka untuk umum': 2,
+      'upacara pembukaan': 3,
+      'renovasi': 4,
+      'pembangunan kembali': 5
     };
 
     record.events.sort((a, b) => {
       let orderA = EVENT_ORDER[a.label.toLowerCase()] || 99;
       let orderB = EVENT_ORDER[b.label.toLowerCase()] || 99;
-      return orderA - orderB;
+      
+      // Aturan 1: Urutkan berdasarkan prioritas di EVENT_ORDER (Konstruksi -> Dibuka -> dst)
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+      
+      // Aturan 2: Jika peristiwanya sama (misal ada 2 "renovasi"), urutkan berdasarkan tahun (kronologis)
+      return a.sortYear - b.sortYear;
     });
 
     let html = '';
@@ -254,15 +283,10 @@ function renderEventsInPanel(qid) {
       html += `<p>${capLabel}: ${timeText}</p>`;
     });
     
-    // KUNCI PERBAIKAN:
-    // 1. Suntikkan kumpulan <p> tepat di SEBELUM div container (sehingga sejajar dengan <p> lainnya)
     container.insertAdjacentHTML('beforebegin', html);
-    
-    // 2. Hancurkan div container beserta animasi loadernya karena sudah tidak dibutuhkan
     container.remove();
 
   } else {
-    // Jika data tidak ada, langsung hancurkan saja containernya agar tidak meninggalkan ruang kosong
     container.remove();
   }
 }
