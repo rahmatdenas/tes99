@@ -1,22 +1,21 @@
 'use strict';
 
+const CHUNK_SIZE = 35;
+let currentRenderIndex = 0;
+let currentFilteredRecords = [];
+
 function formatWikidataDate(dateString, precision) {
-  if (!dateString) return null;
-  
+  if (!dateString) return null;  
   // Buang tanda + di depan format ISO Wikidata
-  let cleanStr = dateString.replace(/^[+-]/, ''); 
-  
+  let cleanStr = dateString.replace(/^[+-]/, '');   
   // Ambil potongan bagian tahun, bulan, dan hari
   let yearStr  = cleanStr.substring(0, 4);
   let monthStr = cleanStr.substring(5, 7);
   let dayStr   = cleanStr.substring(8, 10);
   let yearNum  = parseInt(yearStr);
-
   // Kamus bulan Bahasa Indonesia
   const bulanIndo = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-
   let prec = parseInt(precision) || 9; // Default ke presisi tahunan (9)
-
   if (prec === 11) {
     // Presisi Hari (Contoh: 1 Januari 2007)
     return `${parseInt(dayStr)} ${bulanIndo[parseInt(monthStr)]} ${yearStr}`;
@@ -54,21 +53,17 @@ function loadPrimaryData() {
     })
     .then(() => {
       enableApp(); 
-
       populateImageAndWikipediaData()
         .then(() => {
-          applyIntersectionFilter(true);      
-          
+          applyIntersectionFilter(true);
           // KUNCI PERBAIKAN: Hapus ingatan panel yang telanjur terbuat kosong
-          Object.values(Records).forEach(r => r.panelElem = undefined);
-          
+          Object.values(Records).forEach(r => r.panelElem = undefined);          
           // Perintahkan aplikasi untuk membaca ulang URL dan merender ulang panel dengan data baru
           processHashChange();
         })
         .catch(error => {
           console.warn("Gagal mengambil data Gambar/Wikipedia dari server.", error);
-          applyIntersectionFilter(true);      
-          
+          applyIntersectionFilter(true);                
           // Tetap hapus ingatan dan render ulang sebagai cadangan jika terjadi error
           Object.values(Records).forEach(r => r.panelElem = undefined);
           processHashChange();
@@ -112,16 +107,13 @@ function populateDesignationTypesData() {
 if ('p131LokasiLabel' in result && result.p131LokasiLabel.value) {
         record.lokasiSpesifik = result.p131LokasiLabel.value;
       }
-
       if ('p131Image' in result && result.p131Image.value) {
         record.lokasiImage = extractImageFilename(result.p131Image);
       }
-
       // LOGIKA TAHUN BERDIRI (P571) & PRESISI
 if (!record.tahunBerdiri && result.tahunBerdiriMentah && result.tahunBerdiriMentah.value) {
         let precision = result.tahunPresisi ? result.tahunPresisi.value : 9;
-        record.tahunBerdiri = formatWikidataDate(result.tahunBerdiriMentah.value, precision);
-        
+        record.tahunBerdiri = formatWikidataDate(result.tahunBerdiriMentah.value, precision);        
         // KODE BARU: Simpan string waktu mentah (ISO) untuk keperluan sorting usia
         // (Pastikan baris ini berada DI DALAM kurung kurawal 'if')
         record.rawTahunBerdiri = result.tahunBerdiriMentah.value.replace(/^[+-]/, '');
@@ -129,13 +121,10 @@ if (!record.tahunBerdiri && result.tahunBerdiriMentah && result.tahunBerdiriMent
 
 // === KODE BARU: LOGIKA KLASTER MASJID PENTING (DIOPTIMALKAN) ===
       // Langsung tangkap kesimpulan dari server Wikidata
-      let statusKlaster = result.isKlasterPenting ? result.isKlasterPenting.value : "false";
-      
+      let statusKlaster = result.isKlasterPenting ? result.isKlasterPenting.value : "false";      
       if (statusKlaster === "true") {
         record.masukKlasterPenting = true;
       }
-      // ==============================================================
-
     },
     function() {
       populateDesignationIndex();
@@ -164,14 +153,12 @@ function populateImageAndWikipediaData() {
   return queryWdqsThenProcess(
     SPARQL_QUERY_3,
     function(result) {
-      let record = Records[result.siteQid.value];
-      
+      let record = Records[result.siteQid.value];      
       if ('image' in result) {
         if (!record.imageFilename) {
           record.imageFilename = extractImageFilename(result.image);
         }
-      }
-      
+      }      
       if ('wikipediaUrlTitle' in result) {
         record.articleTitle = decodeURIComponent(result.wikipediaUrlTitle.value);
       }
@@ -268,9 +255,6 @@ function populateStatusAndCapacityData(qid) {
   );
 }
 
-// ====================================================================
-// FUNGSI RENDER: Menyuntikkan Data Peristiwa (DIPERBAIKI)
-// ====================================================================
 // ====================================================================
 // FUNGSI RENDER: Menyuntikkan Peristiwa, Status, & Kapasitas
 // ====================================================================
@@ -378,7 +362,6 @@ function populateMapAndIndex() {
     let li = document.createElement('li');
     li.innerHTML = `<a href="#${qid}">${record.indexTitle}</a>`;
     record.indexLi = li;
-    listIndex.appendChild(li);
   });
   Cluster.addLayers(mapMarkers);
   populateDesignationIndexNodes();
@@ -519,7 +502,6 @@ let selectKombinasi = document.getElementById('filter-sort-kombinasi');
   }
 }
 
-// GANTILAH KESELURUHAN FUNGSI LAMA DENGAN INI:
 // Sekarang fungsi ini wajib menerima "kiriman" angka dari luar (variabel totalValidRecords)
 function updateFeatureCounts(totalValidRecords) {
   
@@ -610,10 +592,17 @@ function applyIntersectionFilter(preventZoom = false) {
     
   });
 
+// 1. Simpan hasil filter ke variabel global untuk dicicil
+  currentFilteredRecords = validRecords;
+  currentRenderIndex = 0; // Reset index setiap kali filter berubah
+
+  // 2. Loop hanya untuk mengumpulkan marker peta (tidak merender list)
   validRecords.forEach(record => {
     if (record.mapMarker) validMarkers.push(record.mapMarker);
-    if (record.indexLi) ol.appendChild(record.indexLi);
   });
+
+  // 3. Panggil mesin pencetak cicilan untuk merender 35 list pertama
+  renderNextChunk();
 
   if (validMarkers.length > 0) {
     Cluster.addLayers(validMarkers);
@@ -623,7 +612,7 @@ function applyIntersectionFilter(preventZoom = false) {
     }
   }
   
-updateFeatureCounts(validRecords.length);
+  updateFeatureCounts(validRecords.length);
 }
 
 function activateSite(qid) {
@@ -881,6 +870,44 @@ function displayArticleExtract(title, elem) {
       elem.classList.remove('loading');
     }
   );
+}
+
+// ============================================================
+// MESIN RENDER CHUNK & INFINITE SCROLL
+// ============================================================
+function renderNextChunk() {
+  let ol = document.getElementById('index-list');
+  if (!ol) return;
+
+  // Potong array dari titik terakhir, ambil 35 data ke depan
+  let nextBatch = currentFilteredRecords.slice(currentRenderIndex, currentRenderIndex + CHUNK_SIZE);  
+  if (nextBatch.length === 0) return;
+  
+  // Gunakan DocumentFragment agar penambahan ke HTML lebih cepat dan tidak berkedip
+  let fragment = document.createDocumentFragment();
+
+  nextBatch.forEach(record => {
+    if (record.indexLi) {
+      record.indexLi.style.display = '';
+      fragment.appendChild(record.indexLi);
+    }
+  });
+
+  ol.appendChild(fragment);
+  currentRenderIndex += CHUNK_SIZE; // Majukan kursor 35 langkah
+}
+
+// Pasang pendeteksi scroll pada kotak pembungkus list Anda
+// (Pastikan ID 'index-container' sesuai dengan ID div yang memiliki overflow-y: scroll di CSS/HTML Anda)
+let scrollContainer = document.getElementById('index-container'); 
+
+if (scrollContainer) {
+  scrollContainer.addEventListener('scroll', function() {
+    // Jika posisi scroll pengguna sudah hampir menyentuh dasar kotak (tersisa 10px)
+    if (this.scrollTop + this.clientHeight >= this.scrollHeight - 10) {
+      renderNextChunk(); // Cetak 35 data berikutnya
+    }
+  });
 }
 
 function queryOsm(qid) {
