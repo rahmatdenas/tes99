@@ -697,7 +697,7 @@ let articleHtml;
     articleHtml = '<div class="article main-text loading"><div class="loader"></div></div>';
   } else {
     let namaAmanURL = encodeURIComponent(record.title);
-    let gFormUrl = `https://docs.google.com/forms/d/e/1FAIpQLSeHMSn6cwcgbZ0xx1CJ5tGXDQacYgzRZUG51STByKUROWXgmg/viewform?usp=pp_url&entry.2138396049==${namaAmanURL}`;
+    let gFormUrl = `https://docs.google.com/forms/d/e/1FAIpQLSeHMSn6cwcgbZ0xx1CJ5tGXDQacYgzRZUG51STByKUROWXgmg/viewform?usp=pp_url&entry.2138396049={namaAmanURL}`;
     articleHtml = `<div class="article main-text nodata"><p>Masjid ini belum memiliki artikel. <a href="javascript:void(0)" data-gform-url="${gFormUrl}" class="sunting-linktambah buka-form-embed">Tambahkan!</a></p></div>`;
   }
   // ---------------------------------
