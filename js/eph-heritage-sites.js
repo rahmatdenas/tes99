@@ -133,7 +133,7 @@ let wilayahClause1 = '';
     wilayahClause2 = 'BIND(wd:Q252 AS ?p131Lokasi)';
   } else {
     wilayahClause1 = `?provinsi wdt:P131 ${provInput}`;
-    wilayahClause2 = `BIND(${provInput} AS ?p131Lokasi)`; // <-- Perbaikan di sini
+    wilayahClause2 = `BIND(${provInput} AS ?p131Lokasi) BIND(${provInput} AS ?p131Lokasi)`; // <-- Perbaikan di sini
   }
   
   // 4. Rakit kueri final (Gunakan regex /.../g untuk memastikan semua instans terganti)
