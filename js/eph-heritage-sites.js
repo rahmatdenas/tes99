@@ -107,7 +107,7 @@ function tentukanKategoriKueri(inputTxt) {
   
   if (inputTxt.includes('Q47461344')) return 'publikasi';
   if (inputTxt.includes('Q7725634')) return 'fiksi'; 
-  if (inputTxt.includes('Q34770')) return 'bahasa';
+  if (inputTxt.includes('Q315')) return 'bahasa';
   if (inputTxt.includes('Q19861951')) return 'kuliner'; 
   
   if (inputTxt.includes('Q11032') || inputTxt.includes('Q41298')) return 'pers';
