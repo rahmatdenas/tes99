@@ -226,6 +226,7 @@ function dapatkanPropertiWikidata(namaKlaster) {
   return 'P131'; 
 }
 
+// Di dalam populateProvinceTypesData (JS 2)
 function populateProvinceTypesData() {
   let inputTxt = document.getElementById('jenis-input').value.trim();
   let provDropdown = document.getElementById('provinsi-input');
@@ -233,17 +234,25 @@ function populateProvinceTypesData() {
   
   // 1. Simpan Data Global 
   currentKategoriUtama = tentukanKategoriKueri(inputTxt);
-  currentNamaKlaster = dapatkanNamaKlaster(inputTxt); // Panggil penamaan klaster
+  currentNamaKlaster = dapatkanNamaKlaster(inputTxt); 
   currentNamaWilayah = provDropdown.options[provDropdown.selectedIndex].text;
   
-  // 2. Ubah Teks Loading (Pastikan ID elemen loading-mu sesuai, misalnya 'loading-text')
-  let teksLoading = document.getElementById('loading-text');
-  if (teksLoading) {
-    teksLoading.textContent = `Sedang Menarik Data ${currentNamaKlaster} di ${currentNamaWilayah}...`;
+  // 2. RENDER LOADING LANGSUNG DI SINI SECARA UTUH
+  let indexList = document.getElementById('index-list');
+  if (indexList) {
+    indexList.innerHTML = `
+      <div style="padding: 40px 20px; text-align: center; line-height: 1.6;">
+        <h3 id="loading-text" style="margin-bottom: 10px; margin-top:0; color: #333;">
+          Sedang Menarik Data ${currentNamaKlaster} di ${currentNamaWilayah}...
+        </h3>
+        <p style="color: #666; font-size:14px; margin-bottom: 25px;">Mohon tunggu sebentar, Wikidata sedang mencari dan menyusun daftar entitas untuk Anda.</p>
+        <div class="loader" style="margin: 0 auto; width: 40px; height: 40px; border-width: 4px;"></div>
+      </div>
+    `;
   }
-  let baseQuery = KUMPULAN_KUERI_0['universal'];
   
-let propLokasi = dapatkanPropertiWikidata(currentNamaKlaster);
+  let baseQuery = KUMPULAN_KUERI_0['universal'];
+  let propLokasi = dapatkanPropertiWikidata(currentNamaKlaster);
   
   let wilayahClause1 = '';
   let unionEkstra = ''; 
