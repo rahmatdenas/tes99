@@ -132,8 +132,8 @@ function getSparqlQuery6(qid) {
     # Kapasitas (P1083)
     OPTIONAL { ?site wdt:P1083 ?kapasitas . }
     
-    # Status Keadaan (P5816)
-    OPTIONAL { ?site wdt:P5816 ?kondisi . }
+    # Status Keadaan (P5817)
+    OPTIONAL { ?site wdt:P5817 ?kondisi . }
     
     BIND (SUBSTR(STR(?site), 32) AS ?siteQid) .
     SERVICE wikibase:label { bd:serviceParam wikibase:language "id". }
