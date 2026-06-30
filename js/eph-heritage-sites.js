@@ -263,7 +263,7 @@ function populateProvinceTypesData() {
   let kurungTutup = '';
 
 // === BLOK BARU: SAKELAR KLASTER KHUSUS ===
-const klasterKhususNasional = ['Gempa bumi dan tsunami', 'Peristiwa lainnya', 'Publikasi'];
+const klasterKhususNasional = ['Gempa bumi dan tsunami', 'Peristiwa lainnya', 'Publikasi', 'Lukisan'];
 let isKhususNasional = klasterKhususNasional.includes(currentNamaKlaster);
 
 // Tentukan filter nasional berdasarkan klaster
