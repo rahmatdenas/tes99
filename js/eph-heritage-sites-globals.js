@@ -156,27 +156,32 @@ function getSparqlQuery6(qid) {
 
   // 1. Data Universal (Semua Klaster Bisa Punya)
   // Perhatikan ?luasData sekarang berupa gabungan "Angka|Satuan|KeteranganP518"
-  let selectClause = `SELECT ?siteQid (SAMPLE(?ketinggianVal) AS ?ketinggian) (SAMPLE(?luasData) AS ?luas) `;
-  let whereClause = `
-    VALUES ?site { wd:${qid} }
-    OPTIONAL { ?site wdt:P2044 ?ketinggianVal . }
-    OPTIONAL {
-      ?site p:P2046 ?luasStmt .
-      ?luasStmt psv:P2046 ?luasNode .
-      ?luasNode wikibase:quantityAmount ?luasVal .
-      OPTIONAL { 
-        ?luasNode wikibase:quantityUnit ?luasUnitItem . 
-        ?luasUnitItem rdfs:label ?luasUnitLabel . 
-        FILTER(LANG(?luasUnitLabel) = "id") 
-      }
-      OPTIONAL { 
-        ?luasStmt pq:P518 ?luasBagianItem . 
-        ?luasBagianItem rdfs:label ?luasBagianLabel . 
-        FILTER(LANG(?luasBagianLabel) = "id") 
-      }
-      BIND(CONCAT(STR(?luasVal), "|", IF(BOUND(?luasUnitLabel), ?luasUnitLabel, ""), "|", IF(BOUND(?luasBagianLabel), ?luasBagianLabel, "")) AS ?luasData)
+let selectClause = `SELECT ?siteQid (GROUP_CONCAT(DISTINCT ?tipeLabel; SEPARATOR=", ") AS ?tipeList) (SAMPLE(?ketinggianVal) AS ?ketinggian) (SAMPLE(?luasData) AS ?luas) `;
+let whereClause = `
+  VALUES ?site { wd:${qid} }
+  OPTIONAL {
+    ?site wdt:P31 ?tipeVal .
+    ?tipeVal rdfs:label ?tipeLabel .
+    FILTER(LANG(?tipeLabel) = "id")
+  }
+  OPTIONAL { ?site wdt:P2044 ?ketinggianVal . }
+  OPTIONAL {
+    ?site p:P2046 ?luasStmt .
+    ?luasStmt psv:P2046 ?luasNode .
+    ?luasNode wikibase:quantityAmount ?luasVal .
+    OPTIONAL { 
+      ?luasNode wikibase:quantityUnit ?luasUnitItem . 
+      ?luasUnitItem rdfs:label ?luasUnitLabel . 
+      FILTER(LANG(?luasUnitLabel) = "id") 
     }
-  `;
+    OPTIONAL { 
+      ?luasStmt pq:P518 ?luasBagianItem . 
+      ?luasBagianItem rdfs:label ?luasBagianLabel . 
+      FILTER(LANG(?luasBagianLabel) = "id") 
+    }
+    BIND(CONCAT(STR(?luasVal), "|", IF(BOUND(?luasUnitLabel), ?luasUnitLabel, ""), "|", IF(BOUND(?luasBagianLabel), ?luasBagianLabel, "")) AS ?luasData)
+  }
+`;
 
   // 2. KLASTER BANGUNAN & FASILITAS
   const klasterBangunan = [
@@ -366,12 +371,21 @@ if (['Prasasti', 'Situs arkeologi', 'Artefak', 'Lontar', 'Naskah', 'Lukisan'].in
   // ==========================================
   // BLOK LAINNYA
   // ==========================================
-  if (klaster === 'Media massa') {
-    selectClause += `(GROUP_CONCAT(DISTINCT ?pemredLabel; separator=", ") AS ?pemredList) (GROUP_CONCAT(DISTINCT ?pendiriLabel; separator=", ") AS ?pendiriList) (SAMPLE(?penerbitLabel) AS ?penerbit) `;
+if (klaster === 'Media massa') {
+    selectClause += `(GROUP_CONCAT(DISTINCT ?pemredLabel; separator=", ") AS ?pemredList) (GROUP_CONCAT(DISTINCT ?pendiriLabel; separator=", ") AS ?pendiriList) (SAMPLE(?penerbitLabel) AS ?penerbit) (SAMPLE(?berakhirData) AS ?berakhirPada) `;
     whereClause += `
       OPTIONAL { ?site wdt:P5769 ?pemredItem . ?pemredItem rdfs:label ?pemredLabel . FILTER(LANG(?pemredLabel) = "id") }
       OPTIONAL { ?site wdt:P112 ?pendiriItem . ?pendiriItem rdfs:label ?pendiriLabel . FILTER(LANG(?pendiriLabel) = "id") }
       OPTIONAL { ?site wdt:P123 ?penerbitItem . ?penerbitItem rdfs:label ?penerbitLabel . FILTER(LANG(?penerbitLabel) = "id") }
+      
+      # Berakhir pada (P582)
+      OPTIONAL {
+        ?site p:P582 ?berakhirStmt .
+        ?berakhirStmt psv:P582 ?berakhirNode .
+        ?berakhirNode wikibase:timeValue ?berakhirVal ; 
+                      wikibase:timePrecision ?berakhirPrec .
+        BIND(CONCAT(STR(?berakhirVal), "|", STR(?berakhirPrec)) AS ?berakhirData)
+      }
     `;
   }
   else if (klaster === 'Hidangan') {
