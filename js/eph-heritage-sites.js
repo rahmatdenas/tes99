@@ -267,13 +267,53 @@ function populateProvinceTypesData() {
     `;
   }
   
+  // === FUNGSI PEMBANTU UNTUK EKSEKUSI KUERI ===
+  // Kita pindahkan ke atas agar mudah dipanggil oleh semua cabang
+  function eksekusiKueriKeWikidata(kueriFinal) {
+    console.log("Kueri yang dikirim:", kueriFinal);
+    return queryWdqsPaginated(
+      kueriFinal,
+      function(result) {
+        let qid = result.SQ.value;
+        if (!(qid in Records)) Records[qid] = new Record(false);
+        let record = Records[qid];
+        record.id = qid;
+
+        record.title = ('sLabel' in result && result.sLabel.value) ? result.sLabel.value : '[ERROR: No title]';
+
+        let provQid = result.PQ ? result.PQ.value : 'Q_UNKNOWN';
+        let provLabel = result.pLabel ? result.pLabel.value : 'Tidak dalam Provinsi';
+
+        if (!(provQid in ProvinceIndex)) {
+          ProvinceIndex[provQid] = new ProvinceIndexEntry();
+          ProvinceIndex[provQid].name = provLabel; 
+        }
+        if (!(provQid in record.designations)) record.designations[provQid] = provLabel; 
+        
+        record.areaTags.add(provQid);
+        
+        if ('lLabel' in result && result.lLabel.value) record.lokasiSpesifik = result.lLabel.value;
+        
+        if (!record.tahunBerdiri && result.tM && result.tM.value) {
+          let precision = result.tP ? result.tP.value : 9;
+          record.tahunBerdiri = formatWikidataDate(result.tM.value, precision);        
+          record.rawTahunBerdiri = result.tM.value.replace(/^[+-]/, '');
+        }
+      },
+      function() {
+        populateProvinceIndex(); 
+        Object.values(Records).forEach(record => { record.indexTitle = record.title });
+      },
+      5000 
+    );
+  }
+
   // === LOGIKA PEMILIHAN TEMPLATE KUERI ===
   let baseQuery = KUMPULAN_KUERI_0['universal'];
   
-  // Jika pengguna memilih mode "Apapun", ganti template dasarnya!
   if (inputTxt.toLowerCase() === 'apapun') {
     baseQuery = KUMPULAN_KUERI_0['apapun'];
-    currentNamaKlaster = 'Objek'; // Nama kosmetik untuk UI
+    currentNamaKlaster = 'Objek'; 
   }
 
   let propLokasi = dapatkanPropertiWikidata(currentNamaKlaster);
@@ -291,39 +331,36 @@ function populateProvinceTypesData() {
   if (currentNamaKlaster === 'Publikasi') {
     filterNasional = '?s wdt:P407 wd:Q9240 .';
   }
-if (provInput === 'luar_negeri') {
+
+  // ==========================================
+  // CABANG LUAR NEGERI
+  // ==========================================
+  if (provInput === 'luar_negeri') {
     let negaraDropdown = document.getElementById('negara-input');
     let negaraValue = negaraDropdown.value;
-    currentNamaWilayah = negaraDropdown.options[negaraDropdown.selectedIndex].text; // Ubah teks UI ke nama negara
+    currentNamaWilayah = negaraDropdown.options[negaraDropdown.selectedIndex].text; 
     
-    // Ganti deskripsi judul di UI
     if (brandingDesc) brandingDesc.textContent = `${currentNamaKlaster} di ${currentNamaWilayah}`;
     
     baseQuery = KUMPULAN_KUERI_0['luar_negeri'];
-    
     let dynamicQuery = baseQuery;
 
-    // KUNCI PERBAIKAN: Cegah bentrokan "apapun"
     if (inputTxt.toLowerCase() === 'apapun') {
-      // Hapus baris pembatas jenis agar kueri mengambil objek apa saja
       dynamicQuery = dynamicQuery.replace(/VALUES \?j \{ <PLACEHOLDER_JENIS> \}/g, '');
     } else {
-      // Jika bukan apapun, replace seperti biasa
       dynamicQuery = dynamicQuery.replace(/<PLACEHOLDER_JENIS>/g, inputTxt);
     }
     
-    // Lanjutkan replace sisanya
     dynamicQuery = dynamicQuery
       .replace(/<PLACEHOLDER_NEGARA>/g, negaraValue)
       .replace(/<PLACEHOLDER_PROP_LOKASI>/g, propLokasi)
       .replace(/<PLACEHOLDER_PROP_TAHUN>/g, propTahun);
       
-    // (Langsung kirim dan hentikan fungsi di sini)
     return eksekusiKueriKeWikidata(dynamicQuery); 
   }
   
   // ==========================================
-  // CABANG LAMA: INDONESIA (Tetap Utuh)
+  // CABANG INDONESIA
   // ==========================================
   if (provInput === 'all') {
     wilayahClause1 = '?p wdt:P31 wd:Q5098 .';
@@ -338,7 +375,6 @@ if (provInput === 'luar_negeri') {
     kurungBuka = '{';
     kurungTutup = '}';
     
-    // Union Ekstra tetap ada, tapi hanya memengaruhi yang Universal
     unionEkstra = `
     UNION {
       ${wilayahClause2}
@@ -346,7 +382,6 @@ if (provInput === 'luar_negeri') {
          wdt:${propLokasi} ?l .
     }`;
     
-    // Jika mode apapun, kita sederhanakan unionnya agar tidak bocor ke filter P31
     if (inputTxt.toLowerCase() === 'apapun') {
        unionEkstra = `
        UNION {
@@ -359,7 +394,6 @@ if (provInput === 'luar_negeri') {
     }
   }
   
-  // Replace string seperti biasa (placeholder <PLACEHOLDER_JENIS> akan hilang sendirinya jika tidak ada di template 'apapun')
   let dynamicQuery = baseQuery
     .replace(/<PLACEHOLDER_FILTER_NASIONAL>/g, filterNasional)
     .replace(/<PLACEHOLDER_KURUNG_BUKA>/g, kurungBuka)  
@@ -371,7 +405,8 @@ if (provInput === 'luar_negeri') {
     .replace(/<PLACEHOLDER_UNION_EKSTRA>/g, unionEkstra) 
     .replace(/<PLACEHOLDER_JENIS>/g, inputTxt);
 
-return eksekusiKueriKeWikidata(dynamicQuery);
+  return eksekusiKueriKeWikidata(dynamicQuery);
+}
 
   function eksekusiKueriKeWikidata(kueriFinal) {
     console.log("Kueri yang dikirim:", kueriFinal);
