@@ -364,6 +364,7 @@ async function fetchWdqsRawWithRetry(query, maxRetry = 3) {
 async function queryWdqsPaginated(queryTemplate, processEachResult, postprocessCallback, chunkSize = 5000) {
   let offset = 0;
   let halaman = 1;
+  let totalDataTerkumpul = 0; // Penampung jumlah data dari semua halaman
 
   while (true) {
     let pagedQuery = queryTemplate.replace(
@@ -371,18 +372,37 @@ async function queryWdqsPaginated(queryTemplate, processEachResult, postprocessC
       `LIMIT ${chunkSize} OFFSET ${offset}`
     );
 
+    // Kembalikan teks loading standar saat mulai menarik halaman baru (jika sebelumnya muncul pesan error)
+    let progressText = document.querySelector('#index-list p');
+    if (progressText && progressText.innerHTML.includes('gagal')) {
+      progressText.innerHTML = `Melanjutkan penarikan data...`;
+    }
+
     let bindings = await fetchWdqsRawWithRetry(pagedQuery);
     bindings.forEach(processEachResult);
 
-    // Hitung kombinasi unik (s,p,l) — ini representasi PERSIS baris subquery,
-    // bukan jumlah entitas ?s unik (yang bisa lebih kecil kalau ada multi-?p per ?s)
     let kombinasiUnik = new Set(
       bindings.map(b => `${b.SQ.value}|${b.PQ ? b.PQ.value : ''}|${b.LQ ? b.LQ.value : ''}`)
     ).size;
 
+    // Tambahkan data halaman ini ke total keseluruhan
+    totalDataTerkumpul += kombinasiUnik;
+    
     console.log(`[Halaman ${halaman}] Kombinasi (s,p,l) unik:`, kombinasiUnik);
 
-    if (kombinasiUnik < chunkSize) break; // baru ini benar-benar halaman terakhir
+    // Cek apakah ini halaman terakhir atau bukan untuk menentukan teks yang pas
+    if (kombinasiUnik < chunkSize) {
+       // Loop akan berhenti, ubah pesan ke status final
+       if (progressText) {
+         progressText.textContent = `Selesai menarik total ${totalDataTerkumpul} data. Sedang memproses tampilan...`;
+       }
+       break; 
+    } else {
+       // Masih ada halaman berikutnya
+       if (progressText) {
+         progressText.textContent = `Selesai mendapatkan ${totalDataTerkumpul} data. Masih ada ribuan data lagi...`;
+       }
+    }
 
     offset += chunkSize;
     halaman++;
