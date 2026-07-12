@@ -43,6 +43,7 @@ function init() {
   window.addEventListener('hashchange', processHashChange);
   
 Map.on('popupopen', function(e) { 
+  e.popup._sudahDiupdate = false;
     let qid = e.popup._qid;
     let record = Records[qid];
     
@@ -55,11 +56,12 @@ Map.on('popupopen', function(e) {
       let encodedFilename = encodeURIComponent(record.imageFilename);
       let imgUrl = `${COMMONS_WIKI_URL_PREF}Special:FilePath/${encodedFilename}?width=250`;
 let imgHtml = `
-            <div style="text-align:center; margin-bottom: 5px;">
+<div style="text-align:center; margin-bottom: 5px;">
               <img src="${imgUrl}" 
+                   draggable="false" 
                    style="width:100%; height:130px; object-fit:cover; border-radius:4px;" 
                    alt="Thumbnail"
-                   onload="if(Records['${qid}'] && Records['${qid}'].popup) Records['${qid}'].popup.update();">
+                   onload="let p = Records['${qid}'].popup; if (p && !p._sudahDiupdate) { p._sudahDiupdate = true; p.update(); }">
             </div>
           `;
       e.popup.setContent(imgHtml + `${record.title}`);
