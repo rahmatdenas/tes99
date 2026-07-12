@@ -105,9 +105,9 @@ populateProvinceTypesData()
   loadingTimeoutToken = setTimeout(() => {
     let loadingDesc = document.getElementById('loading-desc');
     if (loadingDesc && isFetching) {
-       loadingDesc.innerHTML = `Data yang ditarik terlalu banyak. Harap menunggu, 3-5 menit lagi...`;
+       loadingDesc.innerHTML = `Data yang ditarik terlalu banyak. Harap menunggu, 3-5 menit...`;
     }
-  }, 10000);
+  }, 2000);
        
        console.error("Data utama gagal dimuat. Cek koneksi atau server Wikidata.", error);
     }); 
@@ -291,7 +291,7 @@ function populateProvinceTypesData() {
         <h3 id="loading-text" style="margin-bottom: 10px; margin-top:0; color: #333;">
           Sedang Menarik Data<br/>${currentNamaKlaster} di ${currentNamaWilayah}
         </h3>
-        <p style="color: #666; font-size:14px; margin-bottom: 25px;">Harap menunggu, 1-2 menit...</p>
+        <p style="color: #666; font-size:14px; margin-bottom: 25px;">Harap menunggu sebentar...</p>
         <div class="loader" style="margin: 0 auto; width: 40px; height: 40px; border-width: 4px;"></div>
       </div>
     `;
