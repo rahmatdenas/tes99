@@ -813,8 +813,7 @@ function populateMapAndIndex() {
       record.mapMarker = mapMarker;
 mapMarker.bindPopup(record.title, { 
   closeButton: false,
-  minWidth: 200, 
-  maxWidth: 240 
+  maxWidth: 200 
 });
       let popup = mapMarker.getPopup();
       popup._qid = qid;
