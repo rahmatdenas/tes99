@@ -743,7 +743,8 @@ function displayRecordDetails(qid) {
     }
     
     let detailsElem = document.getElementById('details');
-    detailsElem.replaceChild(record.panelElem, detailsElem.childNodes[0]);
+detailsElem.innerHTML = ''; 
+detailsElem.appendChild(record.panelElem);
 
     let stuckImages = record.panelElem.querySelectorAll('img.loading');
     stuckImages.forEach(img => {
