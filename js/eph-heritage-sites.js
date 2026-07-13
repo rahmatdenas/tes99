@@ -142,8 +142,8 @@ function loadPrimaryData() {
          indexList.innerHTML = `
            <div style="padding: 40px 20px; text-align: center; line-height: 1.6;">
              <h3 style="margin-bottom: 10px; margin-top:0; color: #cc0000;">Gagal Menarik Data</h3>
-             <p style="color: #666; font-size:14px; margin-bottom: 25px;">Pastikan koneksi internet Anda stabil atau coba lagi nanti. Jika data gagal dimuat karena terlalu banyak (lebih dari 20.000), silahkan persempit pencarian.</p>
-             <a href="#landing" style="background-color: #882222; color: #fff; font-size:11px; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: 800; display: inline-block;">Kembali ke Beranda</a>
+             <p style="color: #666; font-size:14px; margin-bottom: 25px;">Pastikan internet stabil atau tutup dan coba lagi nanti. Jika data gagal dimuat karena terlalu banyak (lebih dari 20.000), silahkan persempit pencarian.</p>
+             <a href="#" onclick="window.location.href = window.location.pathname; return false;" style="background-color: #882222; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: 800; display: inline-block;">Kembali</a>
            </div>
          `;
        }
