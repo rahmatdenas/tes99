@@ -634,16 +634,17 @@ function activateMapMarker(qid) {
   let record = Records[qid];
   if (!record.mapMarker) return; 
 
+  // +++ ANTI-KEDIP +++
+  // Kalau popup marker ini sudah terbuka (misalnya baru saja dibuka lewat
+  // klik marker itu sendiri, lalu memicu hashchange balik ke sini),
+  // tidak perlu tutup lalu buka lagi.
+  if (record.popup && record.popup.isOpen()) {
+    return;
+  }
+
   try {
-    // =========================================================
-    // +++ OBAT ANTI KLASTER HANTU & TABRAKAN ANIMASI +++
-    // =========================================================
-    // 1. Paksa klaster sebelumnya untuk menguncup dengan menutup popup-nya
     Map.closePopup();
-    
-    // 2. Rem mendadak animasi terbang (flyTo/zoom) yang belum selesai
     Map.stop();
-    // =========================================================
 
     let countSameLocation = 0;
     currentFilteredRecords.forEach(r => {
