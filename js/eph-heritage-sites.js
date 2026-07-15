@@ -913,6 +913,16 @@ mapMarker.bindPopup(record.title, {
           // Popup akan diam dengan tenang tanpa berkedip sedikitpun.
         }
       });
+mapMarker.on('dblclick', function(e) {
+        // 1. Hentikan Leaflet agar tidak melakukan Zoom-In pada peta
+        L.DomEvent.stopPropagation(e);
+        
+        // 2. Langsung tarik panel ke atas karena ini pasti klik kedua yang sangat cepat
+        if (typeof window.setMobilePanelExpanded === 'function') {
+          window.setMobilePanelExpanded(true, true);
+        }
+      });
+      
       // =======================================================
           let popup = mapMarker.getPopup();
       popup._qid = qid;
