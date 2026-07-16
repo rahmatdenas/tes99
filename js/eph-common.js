@@ -484,9 +484,10 @@ async function fetchWdqsRawWithRetry(query, maxRetry = 3, offsetLabel = '') {
         progressText.innerHTML = `<span style="color:#cc0000; font-weight:bold;">Percobaan ${attempt}/${maxRetry} gagal${offsetLabel}. Melakukan penarikan ulang.</span>`;
       }
 
-      if (attempt === maxRetry) throw error;
-      await new Promise(r => setTimeout(r, 1500 * attempt)); 
-    }
+      if (attempt === maxRetry) {
+        await new Promise(r => setTimeout(r, 400)); // beri jeda agar teks sempat ter-render. TANPA BOM WAKTU, perlukah?
+        throw error;
+      }
   }
 }
 
