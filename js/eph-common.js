@@ -453,6 +453,10 @@ if (currentZoom >= maxZoom || isSamePoint) {
           "Titik Terlalu Padat"
         );
       } else {
+                // Jika masih di bawah 60, izinkan mekar (spiderfy)
+        cluster.spiderfy();
+      }
+    } else {
       // Normal: Peta belum mentok, izinkan zoom mendekat
       Map.fitBounds(cluster.getBounds());
     }
